@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discord.js';
-import * as characterData from '../../characters.json' assert { type: 'json' };
+import characterData from '../../characters.json' with { type: 'json' };
 
 export default {
     data: new SlashCommandBuilder()
