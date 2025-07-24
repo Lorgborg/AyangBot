@@ -1,5 +1,5 @@
 // Require the necessary discord.js classes
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, Partials } from 'discord.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
@@ -7,7 +7,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 dotenv.config();
 
 // Create a new client instance
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+    partials: [Partials.Channel]
+});
 
 client.commands = new Collection();
 

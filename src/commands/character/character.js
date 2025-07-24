@@ -1,65 +1,59 @@
-import { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ActionRowBuilder } from 'discord.js';
-import * as characterData from '../../characters.json' assert { type: 'json' };
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import dotenv from 'dotenv';
+dotenv.config();
+import { MongoClient } from 'mongodb';
+const dbClient = new MongoClient(process.env.MONGO_URI);
 
 export default {
-    data: new SlashCommandBuilder()
-        .setName('character')
-        .setDescription('Replies with an Embed of the user\'s character!'),
-    async execute(interaction, client, args) {
-        let row = null;
-        const embed = new EmbedBuilder()
-            .setColor(0x0099FF)
+  data: new SlashCommandBuilder()
+    .setName('character')
+    .setDescription("Replies with an Embed of the user's character!"),
 
-        for (const [key, value] of Object.entries(characterData.default)) {
-            await interaction.deferReply();
-            if(interaction.user.id == key) {
-                if(value.length == 0) {
-                    embed.setTitle('No Characters Found')
-                    embed.setDescription('You have no characters. Please create one using the `/create` command.')
-                }
-                if(value.length == 1) {
-                    const character = value[0]
-                    console.log(character)
-                    embed.setTitle(character.name)
-                    embed.setDescription(`Race: ${character.race} Class: ${character.class}`)
-                    embed.addFields(
-                        { name: 'Str', value: "`" + character.stats.strength + "`", inline: true },
-                        { name: 'Dex', value: "`" + character.stats.dexterity + "`", inline: true  },
-                        { name: 'Con', value: "`" + character.stats.constitution + "`", inline: true  },
-                        { name: 'Int', value: "`" + character.stats.intelligence + "`", inline: true  },
-                        { name: 'Wis', value: "`" + character.stats.wisdom + "`", inline: true  },
-                        { name: 'Cha', value: "`" + character.stats.charisma + "`", inline: true  },
-                    )
-                } else if(value.length > 1) {
-                    embed.setTitle('Multiple Characters')
-                    embed.setDescription('You have multiple characters. Please specify which one you want to see.')
-                    for (const character of value) {
-                        embed.addFields(
-                            { name: character.name, value: `Race: ${character.race}` },
-                        )
-                    }
-                    const buttons = value.map((character, index) => {
-                        return new ButtonBuilder()
-                            .setCustomId(`character_${index}`)
-                            .setLabel(character.name)
-                            .setStyle('Primary');
-                    });
+  async execute(interaction) {
+    const embed = new EmbedBuilder().setColor(0x0099FF);
+    await interaction.deferReply();
 
-                    row = new ActionRowBuilder()
-                        .addComponents(buttons);
-                    embed.setFooter({ text: 'Click a button to choose the characters.' });
-                }
-            } else {
-                embed.setTitle('You aren\'t registered')
-                embed.setDescription(`${interaction.user.id} is not in the db or something.`)
-            }
-        }
+    try {
+      if (!dbClient.topology || !dbClient.topology.isConnected()) {
+        await dbClient.connect();
+      }
 
-        if(row !== null) {
-            await interaction.editReply({ embeds: [embed], components: [row] });
-        } else {
-            await interaction.editReply({ embeds: [embed] });
-        }
-        
+      const db = dbClient.db('DND');
+      const charactersCollection = db.collection('characters');
+
+      const characters = await charactersCollection
+        .find({ userId: interaction.user.id })
+        .toArray();
+
+      if (!characters || characters.length === 0) {
+        await interaction.editReply({
+          content: 'No character data found for you. Run command `/new` to create a new character.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const character = characters[0]; // for now, show only first character
+      embed
+        .setTitle(character.name)
+        .setDescription(`Race: ${character.race} | Class: ${character.class}`)
+        .addFields(
+          { name: 'Str', value: `\`${character.strength}\``, inline: true },
+          { name: 'Dex', value: `\`${character.dexterity}\``, inline: true },
+          { name: 'Con', value: `\`${character.constitution}\``, inline: true },
+          { name: 'Int', value: `\`${character.intelligence}\``, inline: true },
+          { name: 'Wis', value: `\`${character.wisdom}\``, inline: true },
+          { name: 'Cha', value: `\`${character.charisma}\``, inline: true }
+        );
+
+      await interaction.editReply({ embeds: [embed] });
+
+    } catch (err) {
+      console.error("Database error:", err);
+      await interaction.editReply({
+        content: '❌ Database error. Please try again later.',
+        ephemeral: true,
+      });
     }
+  },
 };

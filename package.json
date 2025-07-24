@@ -1,8 +1,11 @@
 {
   "type": "module",
   "dependencies": {
+    "@abmsourav/localdb": "^1.5.2",
     "discord.js": "^14.19.3",
     "dotenv": "^16.5.0",
+    "mongodb": "6.17",
+    "node-localdb": "^0.0.3",
     "openai": "^4.100.0"
   },
   "scripts": {
