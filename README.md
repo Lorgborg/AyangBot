@@ -11,11 +11,8 @@ Run the file with the command **npm run start** in order to start the bot. If an
 Commands must have their own folders within the commands folder. Like how ping.js is inside a folder named ping. Events are placed inside the events folder and not the index to ensure a clean main file.
 
 ## Current things needed help with
-**/help** command, hopefully embeded to help users navigate bot commands // works kinda
 
-**/update** command, which should update a user's selected stat. Hopefully this is implemented with an embed or through dms. Or maybe both that's also cool
-
-These are the required things for the bot to be considered ready for deployement.
+The bot is now in a usable state, all other possible contributions are just to make things look better and feel better.
 
 ## Additional functions
 Custom message for when a character dies
