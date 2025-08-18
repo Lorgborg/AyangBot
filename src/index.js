@@ -1,5 +1,5 @@
 // Require the necessary discord.js classes
-import { Client, Collection, Events, GatewayIntentBits, Partials } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, Partials, ActivityType } from 'discord.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
@@ -73,3 +73,7 @@ for (const file of eventFiles) {
 	}
     console.log(`Event ${event.name} loaded from ${filePath}`);
 }
+
+client.on("ready", () => {
+    client.user.setActivity("Julian when DND", {type: ActivityType.Custom})
+})

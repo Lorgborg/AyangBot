@@ -7,13 +7,23 @@ const dbClient = new MongoClient(process.env.MONGO_URI);
 export default {
   data: new SlashCommandBuilder()
     .setName('character')
-    .setDescription("Replies with an Embed of the user's character!"),
+    .setDescription("Replies with an Embed of the user's character!")
+    .addStringOption(option => 
+      option.setName('player')
+        .setDescription('@ a user to get their user card')
+        .setRequired(false)
+    ),
 
   async execute(interaction) {
     const embed = new EmbedBuilder().setColor(0x0099FF);
     await interaction.deferReply();
+    const player = interaction.options.getString('player');
 
     try {
+      let userId = interaction.user.id
+      if(player) {
+        userId = player.replace(/[<@!>]/g, '');
+      }
       if (!dbClient.topology || !dbClient.topology.isConnected()) {
         await dbClient.connect();
       }
@@ -22,7 +32,7 @@ export default {
       const charactersCollection = db.collection('characters');
 
       const characters = await charactersCollection
-        .find({ userId: interaction.user.id })
+        .find({ userId: userId })
         .toArray();
 
       if (!characters || characters.length === 0) {

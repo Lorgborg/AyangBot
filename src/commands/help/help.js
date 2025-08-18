@@ -13,8 +13,9 @@ export default {
                 { name: '/ping', value: 'Replies with discord ping!' },
                 { name: '/character', value: 'Displays your character\'s information.' },
                 { name: '/new', value: 'Creates a new character.' },
+                { name: '/update', value: 'Updates your current character!'},
                 { name: '/delete', value: 'Deletes your current character.' },
-                { name: '/roll', value: 'Rolls a dice. Format: <roll>D<face>. ex: 1d20 is 1 roll of a 20 faced die' }
+                { name: '/roll', value: "Rolls a dice. Format: <roll>D<face><modifier>. ex: 1d20 is 1 roll of a 20 faced die. 2d6+2 is 2 rolls of a 6 faced die with a +2 modifier. \nOptional: The second argument is for your skills, typing this will automatically add your modifier based on your character's stats. Type `/skills` for the available skills and their aliases" }
             )
         await interaction.reply({ embeds: [embed] });
     },

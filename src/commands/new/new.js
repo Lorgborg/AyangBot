@@ -19,7 +19,7 @@ export default {
         const questions = [
             "What is your character's name?",
             "What is your character's class?",
-            "What is your character's race?",
+            "What is your character's race (in singular form: human, elf, dwarf)?",
             "What is your character's alignment?",
             "I will now ask for modifiers. Should be in the raw form, input 16 instead of +3\nWhat is your Strength modifier?",
             "Dexterity modifier?",
