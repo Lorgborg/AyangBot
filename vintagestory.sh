@@ -1,0 +1,1 @@
+tmux new-session -d -s vintagestory -c /home/rin/vintagestory "./VintagestoryServer"
