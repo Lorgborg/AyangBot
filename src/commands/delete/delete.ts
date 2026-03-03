@@ -1,14 +1,19 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import { MongoClient } from 'mongodb';
-const dbClient = new MongoClient(process.env.MONGO_URI);
+const MONGO_URI = process.env.MONGO_URI
+if(MONGO_URI == null) {
+    throw new Error("mongo uri is null dumbass. Where the hell is your .env file")
+}
+
+const dbClient = new MongoClient(MONGO_URI);
 
 export default {
     data: new SlashCommandBuilder()
         .setName('delete')
         .setDescription('Deletes your current user!'),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
         // deletes the character from the database

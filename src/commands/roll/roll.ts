@@ -1,8 +1,13 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import { MongoClient } from 'mongodb';
-const dbClient = new MongoClient(process.env.MONGO_URI);
+
+const { MONGO_URI } = process.env
+if(MONGO_URI == null) {
+    throw new Error("hey dummy, mongouri is null")
+}
+const dbClient = new MongoClient(MONGO_URI);
 
 // map of prompts to their assigned skills
 const skills = {
@@ -148,9 +153,12 @@ const classBuffs = {
     priest: {
         religion: 3
     },
-    bloodWitch: {
-        
-    }
+}
+
+// Helper to safely look up a value in a buff object by a dynamic string key
+function getBuff(buffObj: Partial<Record<string, number>> | undefined, key: string | undefined): number {
+    if (!buffObj || !key) return 0;
+    return buffObj[key] ?? 0;
 }
 
 export default {
@@ -167,28 +175,32 @@ export default {
                 .setDescription('Stat modifier (e.g., charisma, persuasion, athletics). leave empty otherwise')
                 .setRequired(false)
         ),
-    async execute(interaction) {
-        await interaction.deferReply();
+    async execute(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply({ ephemeral: true });
         const dice = interaction.options.getString('dice');
         const charModifier = interaction.options.getString('modifier');
         let charMods = 0;
+
+        if(dice == null) {
+            await interaction.reply("hey, dice has no value somehow")
+            return
+        }
         // Match XdY, XdY+Z, or XdY-Z
         const match = dice.match(/^(\d+)d(\d+)([+-]\d+)?$/i);
 
         if (!match) {
             const skillMatch = Object.entries(skills).find(([key, values]) =>
                 values.includes(dice.toLowerCase())
-            )?.[0];
+            )?.[0] as keyof typeof skills;
 
             const actionMatch = Object.entries(actions).find(([key, values]) =>
                 values.includes(dice.toLowerCase())
-            )?.[0];
+            )?.[0] as keyof typeof actions;
 
             if(!skillMatch || !actionMatch) {
                 console.log("not found: " + skillMatch + " " + actionMatch)
                 await interaction.editReply({
                     content: "Please input either:\ndice roll:`/roll 1d20` is 1 roll of a 20 faced die\nor a stat: `/roll investigation`\nor a combination of both: `/roll 1d20+3 investigation`",
-                    ephemeral: true,
                 })
                 return;
             }
@@ -200,9 +212,9 @@ export default {
                 .toArray();
             
             if(!characters || characters.length <= 0) {
+
                 await interaction.editReply({
-                    content: 'You rolled the dice with a modifier, but you don\'t have a registered character. Run command `/new` to create a new character.',
-                    ephemeral: true,
+                    content: 'You rolled the dice with a modifier, but you don\'t have a registered character. Run command `/new` to create a new character.'
                 });
                 return
             }
@@ -211,18 +223,14 @@ export default {
             const raw = characters[0][skillMatch];
             const skillVal = Math.floor(Math.round(raw-10)/2)
 
-            const charClass = characters[0]["class"].toLowerCase();
-            let classVal = 0
-            if(classBuffs[charClass]){
-                classVal = classBuffs[charClass][actionMatch] ? classBuffs[charClass][actionMatch] : 0;
-            }
+            const charClass = characters[0]["class"].toLowerCase() as keyof typeof classBuffs;
+            const classMatch = classBuffs[charClass] as Partial<Record<string, number>> | undefined;
+            const classVal = getBuff(classMatch, actionMatch);
 
             // checks if the race has any modifiers to the stats
-            const characterRace = characters[0]["race"].toLowerCase();
-            let raceVal = 0
-            if(raceBuffs[characterRace]){
-                raceVal = raceBuffs[characterRace][actionMatch] ? raceBuffs[characterRace][actionMatch] : 0;
-            }
+            const characterRace = characters[0]["race"].toLowerCase() as keyof typeof raceBuffs;
+            const raceMatch = raceBuffs[characterRace] as Partial<Record<string, number>> | undefined;
+            const raceVal = getBuff(raceMatch, actionMatch);
 
             const res = Math.floor(Math.random() * 20) + 1 + raceVal + skillVal + classVal
             console.log(`${raceVal} ${skillVal}`)
@@ -243,10 +251,6 @@ export default {
                 `🎲 Rolling for ${dice}, \`[1d20${raceString}${skillString}${classString}]\` Result: \`[${res}]\` `
             );
             return
-
-            // await interaction.editReply(
-            //     `🎲 Rolling \`[${rolls}d${sides}${modifierText}${charModifierText}] Result: [${results.join(',')}${modifier !== 0 ? `${modifier >= 0 ? '+' : '-'}${Math.abs(modifier)}]` : ']'} \`(Total: \`${total}\`)`
-            // );
         }
 
         if(charModifier) {
@@ -267,6 +271,10 @@ export default {
                     values.includes(charModifier.toLowerCase())
                 )?.[0];
 
+                if(skillMatch == null) {
+                    return
+                }
+
                 const actionMatch = Object.entries(actions).find(([key, values]) =>
                     values.includes(charModifier.toLowerCase())
                 )?.[0];
@@ -279,18 +287,14 @@ export default {
                 const skillVal = Math.floor(Math.round(raw-10)/2)
 
                 // checks if the class got modifiers
-                const charClass = characters[0]["class"].toLowerCase();
-                let classVal = 0;
-                if(classBuffs[charClass]){
-                    classVal = classBuffs[charClass][actionMatch] ? classBuffs[charClass][actionMatch] : 0;
-                }
+                const charClass = characters[0]["class"].toLowerCase() as keyof typeof classBuffs;
+                const classMatch = classBuffs[charClass] as Partial<Record<string, number>> | undefined;
+                const classVal = getBuff(classMatch, actionMatch);
 
                 // checks if the race has any modifiers to the stats
-                const characterRace = characters[0]["race"].toLowerCase();
-                let raceVal = 0;
-                if(raceBuffs[characterRace]){
-                    raceVal = raceBuffs[characterRace][actionMatch] ? raceBuffs[characterRace][actionMatch] : 0;
-                }
+                const characterRace = characters[0]["race"].toLowerCase() as keyof typeof raceBuffs;
+                const raceMatch = raceBuffs[characterRace] as Partial<Record<string, number>> | undefined;
+                const raceVal = getBuff(raceMatch, actionMatch);
                 console.log(`Race bonus: ${raceVal}`);
 
                 // adds skillval and raceval and class val to finally be added to the total value
@@ -299,8 +303,7 @@ export default {
             } else if (!characters || characters.length === 0) {
                 // says you don't have a character if no char is found
                 await interaction.editReply({
-                    content: 'You rolled the dice with a modifier, but you don\'t have a registered character. Run command `/new` to create a new character.',
-                    ephemeral: true,
+                    content: 'You rolled the dice with a modifier, but you don\'t have a registered character. Run command `/new` to create a new character.'
                 });
                 return
             }
@@ -311,7 +314,7 @@ export default {
         const modifier = match[3] ? parseInt(match[3], 10) : 0;
 
         if (rolls < 1 || sides < 2 || rolls > 100) {
-            await interaction.editReply({ content: 'Please use a reasonable dice format (e.g., 1d20, 2d6, max 100 dice).', ephemeral: true });
+            await interaction.editReply({ content: 'Please use a reasonable dice format (e.g., 1d20, 2d6, max 100 dice).' });
             return;
         }
 

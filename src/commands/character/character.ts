@@ -1,8 +1,21 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 import dotenv from 'dotenv';
 dotenv.config();
-import { MongoClient } from 'mongodb';
-const dbClient = new MongoClient(process.env.MONGO_URI);
+import { MongoClient, TopologyType } from 'mongodb';
+const MONGO_URI = process.env.MONGO_URI;
+if(MONGO_URI == null) {
+  throw new Error("WHERE'S YOUR GOD DAMN .ENV FILE")
+}
+
+class MongoClientWrapper extends MongoClient {
+  topology: any
+
+  super() {
+    this.topology = this.topology
+  }
+}
+
+const dbClient = new MongoClientWrapper(MONGO_URI);
 
 export default {
   data: new SlashCommandBuilder()
@@ -14,7 +27,7 @@ export default {
         .setRequired(false)
     ),
 
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder().setColor(0x0099FF);
     await interaction.deferReply();
     const player = interaction.options.getString('player');
@@ -36,9 +49,11 @@ export default {
         .toArray();
 
       if (!characters || characters.length === 0) {
+
+        await interaction.deferReply({ephemeral: true})
+
         await interaction.editReply({
-          content: 'No character data found for you. Run command `/new` to create a new character.',
-          ephemeral: true,
+          content: 'No character data found for you. Run command `/new` to create a new character.'
         });
         return;
       }
@@ -60,9 +75,10 @@ export default {
 
     } catch (err) {
       console.error("Database error:", err);
+      await interaction.deferReply({ ephemeral: true })
+
       await interaction.editReply({
-        content: '❌ Database error. Please try again later.',
-        ephemeral: true,
+        content: '❌ Database error. Please try again later.'
       });
     }
   },

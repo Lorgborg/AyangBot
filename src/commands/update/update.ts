@@ -1,14 +1,18 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, Interaction, ChatInputCommandInteraction, DMChannel, User, Message } from 'discord.js';
 import dotenv from 'dotenv';
 dotenv.config();
 import { MongoClient } from 'mongodb';
-const dbClient = new MongoClient(process.env.MONGO_URI);
+const { MONGO_URI } = process.env
+if(MONGO_URI == null) {
+    throw new Error("Mongo uri not found")
+}
+const dbClient = new MongoClient(MONGO_URI);
 
 export default {
     data: new SlashCommandBuilder()
         .setName('update')
         .setDescription('Updates the user\'s character information!'),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
         await dbClient.connect();
@@ -47,6 +51,9 @@ export default {
             let problems = true
             while (problems) {
                 const res = await ask(dmChannel, interaction.user, "If you want to change anything, type the stat you want to change, e.g., `name`, `class`, and then type the new value. Otherwise, type `done` to finish!")
+                if(res == null) {
+                    throw new Error("Respone from ask command was null. Can't accept empty message")
+                }
                 if(res != "done") {
                     const res2 = await ask(dmChannel, interaction.user, `What do you want to change ${res} to?`)
                     character[res.toLowerCase()] = res2;
@@ -96,13 +103,20 @@ export default {
     },
 };
 
-async function ask(channel, user, question) {
+async function ask(channel: DMChannel, user: User, question: string) {
     await channel.send(question);
-    const filter = response => response.author.id === user.id;
+    const filter = (response: Message) => response.author.id === user.id;
 
     try {
-        const collected = await channel.awaitMessages({ filter, max: 1, time: 60000, errors: ['time'] });
-        return collected.first().content;
+        const collected = await channel.awaitMessages({
+            filter,
+            max: 1,
+            time: 60000,
+            errors: ['time']
+        });
+
+        const firstMessage = collected.first();
+        return (firstMessage) ? firstMessage.content : null;
     } catch {
         return null;
     }

@@ -1,11 +1,21 @@
-import { Events, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, Client, Collection, Events, Interaction, MessageFlags } from 'discord.js';
+
+interface command {
+    data: any; // or more specific SlashCommandBuilder type
+    execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+}
+
+interface extendedClient extends Client {
+    commands: Collection<string, command>;
+}
 
 export default {
 	name: Events.InteractionCreate,
-	async execute(interaction) {
+	async execute(interaction: Interaction) {
 		if (!interaction.isChatInputCommand()) return;
 
-		const command = interaction.client.commands.get(interaction.commandName);
+		const client = interaction.client as extendedClient
+		const command = client.commands.get(interaction.commandName);
 
 		if (!command) {
 			console.error(`No command matching ${interaction.commandName} was found.`);

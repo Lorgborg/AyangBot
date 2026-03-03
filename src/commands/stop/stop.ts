@@ -1,7 +1,8 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { exec } from "child_process"
+import { kill } from 'process';
 
-function isSessionRunning(name){
+function isSessionRunning(name: string){
     return new Promise((resolve) => {
         exec(`tmux has-session -t ${name}`, (error) => {
             if(error) {
@@ -14,8 +15,12 @@ function isSessionRunning(name){
     })
 }
 
-function killProcess(name){
-    return new Promise((resolve) => {
+interface processReturn {
+    message: string
+}
+
+function killProcess(name: string){
+    return new Promise<processReturn>((resolve) => {
         exec(`tmux kill-session -t ${name}`, (error) => {
             if(error) {
                 resolve({
@@ -39,9 +44,14 @@ export default {
                 .setDescription('Set which process you want to kill, choose between: minecraft, playit or vintagestory')
                 .setRequired(true)
         ),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
         const process = interaction.options.getString('process')
+
+        if(process == null) {
+            interaction.reply("you did not input a process please input a process")
+            return
+        }
 
         if(["minecraft", "playit", "vintagestory"].includes(process)){
             console.log(`running script for: ${process}`)
@@ -52,6 +62,8 @@ export default {
             const script = await killProcess(process)
             interaction.editReply(`${script.message}`)
         } else if(process == "all"){
+            const mcScript = await killProcess("minecraft")
+            const playitScript = await killProcess("playit")
             interaction.editReply(`${mcScript.message}\n${playitScript.message}`)
         } else {
             interaction.editReply("The process you placed does not exist. Please input either: minecraft, playit or vintagestory")

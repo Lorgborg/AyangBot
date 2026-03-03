@@ -1,8 +1,8 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { spawn, exec } from 'child_process';
 
-function isSessionRunning(name){
-    return new Promise((resolve) => {
+function isSessionRunning(name: string): Promise<boolean>{
+    return new Promise<boolean>((resolve) => {
         exec(`tmux has-session -t ${name}`, (error) => {
             if(error) {
                 resolve(false);
@@ -14,8 +14,12 @@ function isSessionRunning(name){
     })
 }
 
-function runScript(name, path) {
-    return new Promise((resolve, reject) => {
+interface processReturn {
+    message: string
+}
+
+function runScript(name: string, path: string): Promise<processReturn> {
+    return new Promise<processReturn>((resolve, reject) => {
         const child = spawn('sh', [path]);
 
         child.once('error', (error) => {
@@ -31,7 +35,7 @@ function runScript(name, path) {
                 })
             } else if(child.killed){
                 resolve({
-                    mesage: `an error occured: stderr: ${child.stderr}, ${child.signalCode}`
+                    message: `an error occured: stderr: ${child.stderr}, ${child.signalCode}`
                 })
             }
         })
@@ -47,10 +51,14 @@ export default {
                 .setDescription('Set which process you want to turn on, choose between: minecraft, playit or vintagestory')
                 .setRequired(true)
         ),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
         const reply = await interaction.fetchReply();
-        const process = await interaction.options.getString('process')
+        const process = interaction.options.getString('process')
+        if(process == null) {
+            interaction.editReply("yeah process isn't there")
+            return
+        }
 
         if(["minecraft", "playit", "vintagestory"].includes(process)){
             console.log(`running script for: ${process}`)
@@ -61,7 +69,10 @@ export default {
             const script = await runScript(`${process}`, `./${process}.sh`)
             interaction.editReply(`${script.message}`)
         } else if(process == "all"){
-            interaction.editReply(`${mcScript.message}\n${playitScript.message}`)
+            const mcScript = await runScript("minecraft", "./minecraft.sh")
+            const playitScript = await runScript("playit", "./playit.sh")
+            const vintageStoryScript = await runScript("vintagestory", "./vintagestory.sh")
+            interaction.editReply(`${mcScript.message}\n${playitScript.message}\n\n${vintageStoryScript.message}`)
         } else {
             interaction.editReply("The process you placed does not exist. Please input either: minecraft, playit or vintagestory")
         }

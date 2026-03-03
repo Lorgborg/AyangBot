@@ -1,10 +1,10 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from 'discord.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('help')
         .setDescription('Lists all the commands!'),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         const embed = new EmbedBuilder()
             .setColor('#0099ff')
             .setTitle('Available Commands')

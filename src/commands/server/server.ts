@@ -1,9 +1,9 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import osu from "node-os-utils";
 import { exec } from "child_process"
 
-function isSessionRunning(name){
-    return new Promise((resolve) => {
+function isSessionRunning(name: string): Promise<boolean>{
+    return new Promise<boolean>((resolve) => {
         exec(`tmux has-session -t ${name}`, (error) => {
             if(error) {
                 resolve(false);
@@ -18,7 +18,7 @@ export default {
     data: new SlashCommandBuilder()
         .setName('server')
         .setDescription('Replies with Pong!'),
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
         const reply = await interaction.fetchReply();
         const cpuUsage = await osu.cpu.usage()

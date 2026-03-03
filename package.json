@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "@abmsourav/localdb": "^1.5.2",
+    "axios": "^1.13.2",
     "discord.js": "^14.19.3",
     "dotenv": "^16.6.1",
     "mongodb": "6.17",
@@ -10,7 +11,11 @@
     "openai": "^4.100.0"
   },
   "scripts": {
-    "start": "node src/index.js",
-    "reload": "node deploy-commands.js"
+    "start": "npx tsx src/index.ts",
+    "reload": "npx tsx deploy-commands.ts"
+  },
+  "devDependencies": {
+    "@types/node-os-utils": "^1.3.4",
+    "tsx": "^4.21.0"
   }
 }
